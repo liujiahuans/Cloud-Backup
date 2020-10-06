@@ -40,10 +40,10 @@ void thr_http_server() {
 }
 
 int main(int argc, char *argv[]) {
-  if (!boost::filesystem::exists(BACKUP_DIR)) {//备份文件路径不存在
+  if (boost::filesystem::exists(BACKUP_DIR) == false) {//备份文件路径不存在
     boost::filesystem::create_directory(BACKUP_DIR);//创建一个备份文件路径
   }
-  if (!boost::filesystem::exists(GZFILE_DIR)) {//压缩包文件路径不存在
+  if (boost::filesystem::exists(GZFILE_DIR) == false) {//压缩包文件路径不存在
     boost::filesystem::create_directory(GZFILE_DIR);//创建一个压缩包存放路径
   }
   
