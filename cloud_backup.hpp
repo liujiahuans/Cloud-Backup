@@ -230,21 +230,23 @@ namespace _cloud_sys {
         :_gz_dir(gz_dir_name),
         _backup_dir(back_dir_name){}
       bool Start(){//总体向外提供的一个接口，开始压缩模块
-        //获取文件名称列表
-        std::vector<std::string> list;
-        data_manage.nonCompressList(&list);
-        //判断是否为非热点文件
-        for (int i = 0; i < list.size(); ++i) {
-          bool ret = FileIsHot(list[i]);
-          if (ret == false) {//如果不是热点文件就进行压缩
-            std::cout << "nonhot file " << list[i];
-            std::string single_src = list[i];
-            std::string single_dst = list[i] + GZ_SUF;
-            std::string src = _backup_dir + single_src;
-            std::string dst = _gz_dir + single_dst;
-            if (CompressUtil::Compress(src, dst) == true) {//压缩成功之后再更新数据信息
-              data_manage.insert(single_src, single_dst);
-              unlink(src.c_str());//更改保存了新文件的名称之后删除原文件名称
+        while (1) {
+          //获取文件名称列表
+          std::vector<std::string> list;
+          data_manage.nonCompressList(&list);
+          //判断是否为非热点文件
+          for (int i = 0; i < list.size(); ++i) {
+            bool ret = FileIsHot(list[i]);
+            if (ret == false) {//如果不是热点文件就进行压缩
+              std::cout << "nonhot file " << list[i];
+              std::string single_src = list[i];//纯源文件
+              std::string single_dst = list[i] + GZ_SUF;//纯压缩包名称
+              std::string src = _backup_dir + single_src;//源文件路径名
+              std::string dst = _gz_dir + single_dst;
+              if (CompressUtil::Compress(src, dst) == true) {//压缩成功之后再更新数据信息
+                data_manage.insert(single_src, single_dst);
+                unlink(src.c_str());//更改保存了新文件的名称之后删除原文件名称
+              }
             }
           }
           sleep(INTREVAL_TIME); 
@@ -276,7 +278,7 @@ namespace _cloud_sys {
       bool Start() {//启动网络通信模块接口
         _server.Put("/(.*)", Upload);
         _server.Get("/list", List);
-        _server.Get(" /download/(.*)", Download);//捕捉任意字符串
+        _server.Get("/download/(.*)", Download);//捕捉任意字符串
 
         _server.listen("0.0.0.0", 22);//开始监听
         return true;
@@ -296,13 +298,13 @@ namespace _cloud_sys {
         std::vector<std::string> list;
         data_manage.getAllName(&list);
         std::stringstream tmp;
-        tmp << "<html><body><hr />";
+        tmp << "<html><body><hr />";//头部标签
         for (int i = 0; i < list.size(); ++i) {
           tmp << "<a href='/download/" << list[i] << "'>" << list[i] << "</a>";
           tmp << "<hr />";
         }
-        tmp << "<hr /><body><html>";
-      
+        tmp << "<hr /><body><html>";//结尾
+
         res.set_content(tmp.str().c_str(), tmp.str().size(), "text/html");
         res.status = 200;
         return;
@@ -324,10 +326,10 @@ namespace _cloud_sys {
           data_manage.insert(filename, filename);//更新数据信息
         }
         //从文件中读取数据响应给客户端
-          FileUtil::Read(pathname, &res.body);//文件没有压缩 将文件读取到res的body中
-          res.set_content("Content-type", "application/octet-stream");//二进制流下载
-          res.status = 200;
-          return;
+        FileUtil::Read(pathname, &res.body);//文件没有压缩 将文件读取到res的body中
+        res.set_content("Content-type", "application/octet-stream");//二进制流下载
+        res.status = 200;
+        return;
       }
     private:
       std::string _file_dir;//文件上传备份路径
